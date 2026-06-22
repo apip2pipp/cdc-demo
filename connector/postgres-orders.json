@@ -1,0 +1,26 @@
+{
+  "name": "users-postgres-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "topic.prefix": "cdc_postgres",
+    "database.hostname": "host.docker.internal",
+    "database.port": "5432",
+    "database.user": "postgres",
+    "database.password": "afif28",
+    "database.dbname": "belajar-postgres",
+    "database.sslmode": "disable",
+    "plugin.name": "pgoutput",
+    "slot.name": "debezium_users_slot",
+    "publication.name": "dbz_users_publication",
+    "publication.autocreate.mode": "filtered",
+    "table.include.list": "public.users",
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "false",
+    "decimal.handling.mode": "double",
+    "topic.creation.enable": "true",
+    "topic.creation.default.partitions": "1",
+    "topic.creation.default.replication.factor": "1",
+    "include.schema.changes": "false"
+  }
+}
