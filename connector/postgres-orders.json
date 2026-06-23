@@ -1,5 +1,5 @@
 {
-  "name": "users-postgres-connector",
+  "name": "orders-postgres-connector",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "tasks.max": "1",
@@ -11,10 +11,10 @@
     "database.dbname": "belajar-postgres",
     "database.sslmode": "disable",
     "plugin.name": "pgoutput",
-    "slot.name": "debezium_users_slot",
-    "publication.name": "dbz_users_publication",
+    "slot.name": "debezium_orders_slot",
+    "publication.name": "dbz_orders_publication",
     "publication.autocreate.mode": "filtered",
-    "table.include.list": "public.users",
+    "table.include.list": "public.orders",
     "snapshot.mode": "initial",
     "tombstones.on.delete": "false",
     "decimal.handling.mode": "double",
