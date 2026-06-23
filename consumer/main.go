@@ -92,14 +92,18 @@ func main() {
 
 	// REST API
 	mux.HandleFunc("/api/stats", handler.AuthMiddleware(api.GetStats))
-	mux.HandleFunc("/api/audit-logs", handler.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		// Route /api/audit-logs  vs  /api/audit-logs/{id}
+	mux.HandleFunc("/api/audit-logs/", handler.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		// Route /api/audit-logs/  vs  /api/audit-logs/{id}
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		if path == "/api/audit-logs" {
 			api.ListAuditLogs(w, r)
 		} else {
 			api.GetAuditLog(w, r)
 		}
+	}))
+	// Also handle exact match without trailing slash
+	mux.HandleFunc("/api/audit-logs", handler.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		api.ListAuditLogs(w, r)
 	}))
 
 	srv := &http.Server{Addr: *httpAddr, Handler: mux}

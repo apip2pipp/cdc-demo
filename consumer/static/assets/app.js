@@ -164,7 +164,7 @@ function createRow(log, isNew = false) {
     <td class="td-table" title="${log.table_name}">${escHtml(table)}</td>
     <td>${actionBadge(log.action)}</td>
     <td class="td-record">${escHtml(recordId)}</td>
-    <td><a href="/detail.html?id=${log.id}" class="btn-detail">↗ Detail</a></td>
+    <td><button class="btn-detail" onclick="openDetailModal(${log.id})">↗ Detail</button></td>
   `;
   return tr;
 }
@@ -279,4 +279,138 @@ function escHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/* ── Modal Detail ────────────────────────────────────────────────────────── */
+async function openDetailModal(id) {
+  const modal = document.getElementById('detail-modal');
+  modal.classList.add('visible');
+  document.getElementById('modal-title').innerHTML = `Log Detail #${id} <span id="modal-badge-text" class="modal-title-badge">...</span>`;
+  
+  const tbodyBefore = document.getElementById('diff-before-body');
+  const tbodyAfter = document.getElementById('diff-after-body');
+  
+  tbodyBefore.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] null-state">Loading...</td></tr>`;
+  tbodyAfter.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] null-state">Loading...</td></tr>`;
+  
+  try {
+    const res = await fetch(`/api/audit-logs/${id}`);
+    if (res.status === 401) { window.location.href = '/login.html'; return; }
+    if (!res.ok) throw new Error('Failed to load');
+    
+    const log = await res.json();
+    renderModalDiff(log);
+  } catch (e) {
+    tbodyBefore.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] text-error">Error loading data</td></tr>`;
+    tbodyAfter.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] text-error">Error loading data</td></tr>`;
+  }
+}
+
+function closeDetailModal() {
+  document.getElementById('detail-modal').classList.remove('visible');
+}
+
+// Close on escape or outside click
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDetailModal();
+});
+document.getElementById('detail-modal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('detail-modal')) closeDetailModal();
+});
+
+function renderModalDiff(log) {
+  const dot = document.getElementById('modal-badge-dot');
+  const badge = document.getElementById('modal-badge-text');
+  
+  const a = (log.action || '').toUpperCase();
+  badge.textContent = a;
+  
+  if (a === 'INSERT') {
+    dot.style.background = 'var(--clr-insert)';
+    badge.style.color = 'var(--clr-insert)';
+    badge.style.borderColor = 'var(--clr-insert)';
+  } else if (a === 'UPDATE') {
+    dot.style.background = 'var(--clr-update)';
+    badge.style.color = 'var(--clr-update)';
+    badge.style.borderColor = 'var(--clr-update)';
+  } else if (a === 'DELETE') {
+    dot.style.background = 'var(--clr-delete)';
+    badge.style.color = 'var(--clr-delete)';
+    badge.style.borderColor = 'var(--clr-delete)';
+  } else {
+    dot.style.background = 'var(--clr-primary)';
+    badge.style.color = 'var(--clr-primary)';
+    badge.style.borderColor = 'var(--clr-primary)';
+  }
+
+  const beforeStr = log.before_data ? JSON.stringify(log.before_data, null, 2) : 'null';
+  const afterStr = log.after_data ? JSON.stringify(log.after_data, null, 2) : 'null';
+  
+  const beforeLines = beforeStr.split('\n');
+  const afterLines = afterStr.split('\n');
+  
+  // Simple line-by-line diff
+  let htmlBefore = '';
+  let htmlAfter = '';
+  
+  const maxLines = Math.max(beforeLines.length, afterLines.length);
+  
+  let adds = 0;
+  let rems = 0;
+
+  for (let i = 0; i < maxLines; i++) {
+    const b = beforeLines[i] !== undefined ? beforeLines[i] : null;
+    const aLine = afterLines[i] !== undefined ? afterLines[i] : null;
+    
+    let bClass = '';
+    let aClass = '';
+    
+    if (b !== null && aLine !== null && b !== aLine) {
+      bClass = 'diff-removed';
+      aClass = 'diff-added';
+      rems++; adds++;
+    } else if (b !== null && aLine === null) {
+      bClass = 'diff-removed';
+      rems++;
+    } else if (b === null && aLine !== null) {
+      aClass = 'diff-added';
+      adds++;
+    }
+    
+    if (b !== null) {
+      htmlBefore += `<tr class="${bClass}"><td class="gutter-number">${i+1}</td><td class="pl-md py-[2px]">${highlightJson(b)}</td></tr>`;
+    }
+    if (aLine !== null) {
+      htmlAfter += `<tr class="${aClass}"><td class="gutter-number">${i+1}</td><td class="pl-md py-[2px]">${highlightJson(aLine)}</td></tr>`;
+    }
+  }
+  
+  document.getElementById('diff-before-body').innerHTML = htmlBefore || `<tr><td colspan="2" class="pl-md py-[2px] null-state">No Data</td></tr>`;
+  document.getElementById('diff-after-body').innerHTML = htmlAfter || `<tr><td colspan="2" class="pl-md py-[2px] null-state">No Data</td></tr>`;
+
+  document.getElementById('diff-stats').innerHTML = `
+    <div class="diff-stat-item"><span class="diff-stat-dot rem"></span> ${rems} Removals</div>
+    <div class="diff-stat-item"><span class="diff-stat-dot add"></span> ${adds} Additions</div>
+  `;
+}
+
+function highlightJson(line) {
+  if (line === 'null') return '<span class="json-null">null</span>';
+  return line
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+      let cls = 'json-number';
+      if (/^"/.test(match)) {
+        if (/:$/.test(match)) {
+          cls = 'json-key';
+        } else {
+          cls = 'json-string';
+        }
+      } else if (/true|false/.test(match)) {
+        cls = 'json-boolean';
+      } else if (/null/.test(match)) {
+        cls = 'json-null';
+      }
+      return '<span class="' + cls + '">' + match + '</span>';
+    });
 }

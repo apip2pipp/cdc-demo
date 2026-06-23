@@ -221,5 +221,50 @@
     overlay.classList.remove('visible');
   });
 </script>
+<!-- ── Modal Overlay ───────────────────────────────────────────────────────── -->
+<div id="detail-modal" aria-labelledby="modal-title" aria-modal="true" class="modal-overlay" role="dialog">
+  <div class="modal-container modal-glow" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div id="modal-badge-dot" class="modal-title-dot" style="background:var(--clr-primary)"></div>
+        <h2 class="modal-title" id="modal-title">Log Detail <span id="modal-badge-text" class="modal-title-badge"></span></h2>
+      </div>
+      <button aria-label="Close" class="modal-close-btn" onclick="closeDetailModal()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- Before Data -->
+      <div class="diff-col">
+        <div class="diff-header">
+          <span class="diff-title">Before Data</span>
+        </div>
+        <div class="diff-content">
+          <table class="diff-table">
+            <tbody id="diff-before-body"></tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- After Data -->
+      <div class="diff-col">
+        <div class="diff-header">
+          <span class="diff-title">After Data</span>
+        </div>
+        <div class="diff-content">
+          <table class="diff-table">
+            <tbody id="diff-after-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <div class="diff-stats" id="diff-stats"></div>
+      <button class="btn-close-modal" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
