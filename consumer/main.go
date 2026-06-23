@@ -66,17 +66,33 @@ func main() {
 
 	// ── HTTP server (dashboard + API) ─────────────────────────────────────────
 	api := &handler.APIHandler{DB: db}
+	auth := &handler.AuthHandler{}
 	mux := http.NewServeMux()
 
-	// Static files
-	mux.Handle("/", http.FileServer(http.Dir("./static")))
+	// Static files (Protected)
+	fs := http.FileServer(http.Dir("./static"))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/login.html" || strings.HasPrefix(r.URL.Path, "/assets/") {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		if !handler.IsAuthenticated(r) {
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return
+		}
+		fs.ServeHTTP(w, r)
+	})
+
+	// Auth API
+	mux.HandleFunc("/api/login", auth.Login)
+	mux.HandleFunc("/api/logout", auth.Logout)
 
 	// WebSocket endpoint
-	mux.HandleFunc("/ws", hub.ServeWS)
+	mux.HandleFunc("/ws", handler.AuthMiddleware(hub.ServeWS))
 
 	// REST API
-	mux.HandleFunc("/api/stats", api.GetStats)
-	mux.HandleFunc("/api/audit-logs", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/stats", handler.AuthMiddleware(api.GetStats))
+	mux.HandleFunc("/api/audit-logs", handler.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Route /api/audit-logs  vs  /api/audit-logs/{id}
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		if path == "/api/audit-logs" {
@@ -84,7 +100,7 @@ func main() {
 		} else {
 			api.GetAuditLog(w, r)
 		}
-	})
+	}))
 
 	srv := &http.Server{Addr: *httpAddr, Handler: mux}
 	go func() {

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Kinetic Audit Console - Login</title>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-high": "#222a3d",
+            "primary": "#8ed5ff",
+            "on-tertiary-container": "#613b00",
+            "tertiary-container": "#f1a02b",
+            "outline": "#87929a",
+            "background": "#0b1326",
+            "secondary-fixed": "#e1e0ff",
+            "on-primary": "#00354a",
+            "secondary-fixed-dim": "#c0c1ff",
+            "error": "#ffb4ab",
+            "on-secondary": "#1000a9",
+            "on-primary-fixed-variant": "#004c69",
+            "surface": "#0b1326",
+            "on-secondary-fixed": "#07006c",
+            "inverse-surface": "#dae2fd",
+            "on-error": "#690005",
+            "surface-dim": "#0b1326",
+            "tertiary-fixed": "#ffddb8",
+            "on-error-container": "#ffdad6",
+            "surface-tint": "#7bd0ff",
+            "tertiary-fixed-dim": "#ffb960",
+            "on-surface": "#dae2fd",
+            "primary-fixed": "#c4e7ff",
+            "on-surface-variant": "#bdc8d1",
+            "inverse-primary": "#00668a",
+            "surface-container-highest": "#2d3449",
+            "surface-variant": "#2d3449",
+            "surface-container": "#171f33",
+            "inverse-on-surface": "#283044",
+            "surface-container-lowest": "#060e20",
+            "on-secondary-fixed-variant": "#2f2ebe",
+            "primary-container": "#38bdf8",
+            "surface-container-low": "#131b2e",
+            "outline-variant": "#3e484f",
+            "on-tertiary": "#472a00",
+            "on-primary-fixed": "#001e2c",
+            "secondary": "#c0c1ff",
+            "surface-bright": "#31394d",
+            "tertiary": "#ffc176",
+            "primary-fixed-dim": "#7bd0ff",
+            "on-secondary-container": "#b0b2ff",
+            "on-primary-container": "#004965",
+            "secondary-container": "#3131c0",
+            "on-tertiary-fixed-variant": "#653e00",
+            "error-container": "#93000a",
+            "on-tertiary-fixed": "#2a1700",
+            "on-background": "#dae2fd"
+          },
+          borderRadius: {
+            DEFAULT: "0.125rem",
+            lg: "0.25rem",
+            xl: "0.5rem",
+            full: "0.75rem"
+          },
+          spacing: {
+            xl: "40px",
+            xs: "4px",
+            sm: "8px",
+            base: "4px",
+            md: "16px",
+            lg: "24px",
+            "container-max": "1440px",
+            gutter: "20px"
+          },
+          fontFamily: {
+            "body-md": ["Geist"],
+            "headline-sm": ["Geist"],
+            "label-mono": ["JetBrains Mono"],
+            "headline-md": ["Geist"],
+            "display-lg": ["Geist"],
+            "code-block": ["JetBrains Mono"],
+            "body-lg": ["Geist"]
+          },
+          fontSize: {
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "code-block": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .cyber-grid {
+      background-image: 
+        linear-gradient(to right, rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+      background-size: 60px 60px;
+      perspective: 1000px;
+    }
+    .animated-mesh {
+      background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 100% 0%, rgba(192, 193, 255, 0.05) 0%, transparent 40%),
+            radial-gradient(circle at 0% 100%, rgba(241, 160, 43, 0.03) 0%, transparent 40%);
+      filter: blur(80px);
+      animation: pulse-mesh 15s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-mesh {
+      0% { transform: scale(1) translate(0, 0); }
+      100% { transform: scale(1.1) translate(2%, 2%); }
+    }
+    .glass-panel {
+      background: rgba(23, 31, 51, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(135, 146, 154, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 
+            inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+    .glass-panel:before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(142, 213, 255, 0.4), transparent);
+    }
+    .brand-glow {
+      filter: drop-shadow(0 0 8px rgba(142, 213, 255, 0.6));
+    }
+    .btn-glow {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      transition: all 0.3s ease;
+    }
+    .btn-glow:hover {
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+      transform: translateY(-1px);
+    }
+    .input-glow:focus-within {
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.5);
+    }
+    .circuit-line {
+      position: absolute;
+      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+      height: 1px;
+      width: 100%;
+      animation: circuit-slide 8s linear infinite;
+    }
+    @keyframes circuit-slide {
+      0% { transform: translateX(-100%) translateY(0); opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateX(100%) translateY(0); opacity: 0; }
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex items-center justify-center relative overflow-hidden">
+  
+  <!-- Dynamic Background Layers -->
+  <div class="absolute inset-0 cyber-grid pointer-events-none opacity-40"></div>
+  <div class="absolute inset-0 animated-mesh pointer-events-none"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-background pointer-events-none"></div>
+  
+  <!-- Floating Circuit Lines -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden">
+    <div class="circuit-line top-[20%]"></div>
+    <div class="circuit-line top-[50%] scale-x-75" style="animation-delay: 2s;"></div>
+    <div class="circuit-line top-[80%] scale-x-50" style="animation-delay: 5s;"></div>
+  </div>
+
+  <!-- Login Container -->
+  <div class="w-full max-w-md px-md z-10">
+    <!-- Brand / Header -->
+    <div class="flex flex-col items-center mb-xl">
+      <div class="relative group mb-md">
+        <div class="absolute -inset-1 bg-primary-container blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+        <img alt="Kinetic Audit Logo" class="relative w-[52px] h-[52px] brand-glow rounded-xl bg-surface-container-high/50 p-2 border border-primary/20" src="data:image/png;base64,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" />
+      </div>
+      <h1 class="font-headline-md text-[32px] font-extrabold text-on-surface tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-on-surface to-on-surface/70">Kinetic Audit</h1>
+      <p class="font-label-mono text-[10px] text-primary/70 uppercase mt-2 tracking-[0.2em] font-medium">Secure Access Portal • V4.0</p>
+    </div>
+
+    <!-- Glass Card -->
+    <div class="glass-panel rounded-xl p-xl relative overflow-hidden">
+      
+      <!-- Error Message Container -->
+      <div id="login-error" class="hidden mb-4 p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm text-center">
+        Email atau kata sandi salah.
+      </div>
+
+      <form id="login-form" class="space-y-lg">
+        <!-- Email Input -->
+        <div class="space-y-sm">
+          <label class="font-label-mono text-[11px] text-on-surface-variant/80 block uppercase tracking-widest pl-1" for="email">Alamat Email</label>
+          <div class="relative input-glow rounded-lg transition-all duration-300 group">
+            <div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors" style="font-size: 18px;">mail</span>
+            </div>
+            <input id="email" class="w-full bg-surface-container-low/40 border border-outline-variant/30 text-on-surface font-body-md py-3.5 pl-[44px] pr-md rounded-lg focus:border-primary-container focus:ring-0 transition-all placeholder:text-on-surface-variant/40 hover:bg-surface-container-low/60" placeholder="admin@kinetic.local" required type="email"/>
+          </div>
+        </div>
+
+        <!-- Password Input -->
+        <div class="space-y-sm">
+          <div class="flex justify-between items-center px-1">
+            <label class="font-label-mono text-[11px] text-on-surface-variant/80 block uppercase tracking-widest" for="password">Kata Sandi</label>
+            <a class="font-label-mono text-[10px] text-primary-container/80 hover:text-primary transition-colors uppercase tracking-wider" href="#">Lupa Sandi?</a>
+          </div>
+          <div class="relative input-glow rounded-lg transition-all duration-300 group">
+            <div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+              <span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors" style="font-size: 18px;">lock</span>
+            </div>
+            <input id="password" class="w-full bg-surface-container-low/40 border border-outline-variant/30 text-on-surface font-body-md py-3.5 pl-[44px] pr-md rounded-lg focus:border-primary-container focus:ring-0 transition-all placeholder:text-on-surface-variant/40 hover:bg-surface-container-low/60" placeholder="••••••••" required type="password"/>
+          </div>
+        </div>
+
+        <!-- Remember Me & Extras -->
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center gap-md cursor-pointer group">
+            <div class="relative flex items-center justify-center w-[18px] h-[18px] border border-outline-variant/50 rounded-md bg-surface-container-low/60 group-hover:border-primary-container/50 transition-colors">
+              <input class="opacity-0 absolute inset-0 cursor-pointer peer" type="checkbox"/>
+              <span class="material-symbols-outlined text-[14px] text-primary-container opacity-0 peer-checked:opacity-100 transition-all scale-75 peer-checked:scale-100">check</span>
+            </div>
+            <span class="font-body-md text-sm text-on-surface-variant/90 select-none">Ingat Saya</span>
+          </label>
+          <div class="flex items-center gap-xs bg-surface-container-low/50 px-2 py-1 rounded-full border border-outline-variant/20">
+            <span class="material-symbols-outlined text-[14px] text-primary/80">verified_user</span>
+            <span class="font-label-mono text-primary/70 text-[9px] uppercase tracking-tighter">E2E Encrypted</span>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="pt-2">
+          <button type="submit" id="submit-btn" class="btn-glow w-full bg-primary-container text-on-primary-container font-semibold text-base py-3.5 rounded-lg hover:bg-primary transition-all flex items-center justify-center gap-md group relative overflow-hidden shadow-lg shadow-primary/20">
+            <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]"></div>
+            <span class="tracking-wide">Sign In to Console</span>
+            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" style="font-size: 20px;">arrow_forward</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Footer Note -->
+      <div class="mt-xl pt-lg border-t border-outline-variant/20 text-center">
+        <p class="font-label-mono text-[10px] text-outline leading-relaxed tracking-wider">
+          Sistem ini dimonitor secara real-time.<br/>Akses tidak sah akan dicatat dan ditindaklanjuti.
+        </p>
+        <div class="mt-3 inline-flex items-center gap-sm bg-surface-dim px-3 py-1 rounded-md border border-outline-variant/10">
+          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span class="font-label-mono text-[9px] text-on-surface-variant/60 uppercase">Node ID: XA-992-B-ACTIVE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Disclaimer -->
+    <p class="text-center mt-md text-[11px] text-on-surface-variant/40 font-body-md">
+      © 2024 Kinetic Audit Technologies. All rights reserved.
+    </p>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('login-error');
+      const submitBtn = document.getElementById('submit-btn');
+      
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.7';
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          const data = await response.json();
+          errorDiv.textContent = data.error || 'Login gagal. Periksa kembali kredensial Anda.';
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Terjadi kesalahan jaringan. Coba lagi.';
+        errorDiv.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+    });
+  </script>
+</body>
+</html>

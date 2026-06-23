@@ -1,117 +1,225 @@
 <!DOCTYPE html>
-<html lang="id">
+<html class="dark" lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CDC Audit Trail Dashboard</title>
-  <meta name="description" content="Real-time audit trail dashboard untuk monitoring CDC events dari PostgreSQL via Debezium & Kafka." />
-  <link rel="stylesheet" href="/assets/style.css" />
+  <title>CDC Audit Trail Overview</title>
+  <meta name="description" content="Real-time CDC audit trail dashboard for monitoring PostgreSQL events via Debezium & Kafka." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
 
-<div class="page-wrapper">
+<!-- ── Side Navigation ─────────────────────────────────────────────────────── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h2 class="sidebar-title">Audit Console</h2>
+    <p class="sidebar-subtitle">Vigilant Monitoring</p>
+  </div>
 
-  <!-- ── Header ─────────────────────────────────────────────────────────── -->
-  <header class="header">
-    <div class="header-brand">
-      <div class="header-icon">📋</div>
-      <div>
-        <div class="header-title">CDC Audit Trail</div>
-        <div class="header-subtitle">PostgreSQL · Debezium · Kafka · Real-time</div>
+  <div class="sidebar-nav">
+    <a href="/" class="nav-item active">
+      <span class="material-symbols-outlined nav-icon" style="font-variation-settings:'FILL' 1">dashboard</span>
+      <span>Overview</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-symbols-outlined nav-icon">history</span>
+      <span>History</span>
+    </a>
+    <a href="#" class="nav-item">
+      <span class="material-symbols-outlined nav-icon">settings</span>
+      <span>Settings</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <a href="#" class="nav-item">
+      <span class="material-symbols-outlined nav-icon">help</span>
+      <span>Help</span>
+    </a>
+    <a href="/api/logout" class="nav-item">
+      <span class="material-symbols-outlined nav-icon">logout</span>
+      <span>Logout</span>
+    </a>
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">
+        <span class="material-symbols-outlined" style="font-size:20px">person</span>
       </div>
+      <span class="sidebar-username">System Administrator</span>
     </div>
-    <div class="header-right">
-      <div id="live-badge" class="live-badge disconnected">
-        <span class="live-dot"></span>
-        <span id="live-text">CONNECTING</span>
+  </div>
+</nav>
+
+<!-- ── Main Content ────────────────────────────────────────────────────────── -->
+<div class="main-wrap">
+
+  <!-- Top Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+      <h1 class="topbar-title">CDC Audit Trail</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="status-group">
+        <span class="status-label">System Status</span>
+        <div id="live-badge" class="live-badge disconnected">
+          <div class="live-dot-wrap">
+            <div class="live-dot"></div>
+          </div>
+          <span id="live-text">CONNECTING</span>
+        </div>
       </div>
+      <button class="icon-btn" aria-label="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+      </button>
     </div>
   </header>
 
-  <!-- ── Stat cards ─────────────────────────────────────────────────────── -->
-  <section class="stats-grid" aria-label="Summary statistics">
+  <!-- Page Content -->
+  <div class="page-content">
 
-    <div class="stat-card glass total">
-      <div class="stat-label"><span class="stat-label-dot"></span>Total Events</div>
-      <div class="stat-value" id="stat-total">0</div>
-    </div>
+    <!-- ── Metric Cards ─────────────────────────────────────────────────── -->
+    <section class="metrics-grid" aria-label="Summary statistics">
 
-    <div class="stat-card glass insert">
-      <div class="stat-label"><span class="stat-label-dot"></span>Insert</div>
-      <div class="stat-value" id="stat-inserts">0</div>
-    </div>
+      <div class="metric-card total">
+        <div class="metric-header">
+          <span class="metric-label">Total Events</span>
+          <span class="material-symbols-outlined metric-icon">database</span>
+        </div>
+        <div class="metric-value" id="stat-total">0</div>
+        <div class="metric-glow"></div>
+      </div>
 
-    <div class="stat-card glass update">
-      <div class="stat-label"><span class="stat-label-dot"></span>Update</div>
-      <div class="stat-value" id="stat-updates">0</div>
-    </div>
+      <div class="metric-card insert">
+        <div class="metric-header">
+          <span class="metric-label">INSERT</span>
+          <span class="material-symbols-outlined metric-icon insert">add_circle</span>
+        </div>
+        <div class="metric-value" id="stat-inserts">0</div>
+        <div class="metric-glow insert"></div>
+      </div>
 
-    <div class="stat-card glass delete">
-      <div class="stat-label"><span class="stat-label-dot"></span>Delete</div>
-      <div class="stat-value" id="stat-deletes">0</div>
-    </div>
+      <div class="metric-card update">
+        <div class="metric-header">
+          <span class="metric-label">UPDATE</span>
+          <span class="material-symbols-outlined metric-icon update">edit</span>
+        </div>
+        <div class="metric-value" id="stat-updates">0</div>
+        <div class="metric-glow update"></div>
+      </div>
 
-  </section>
+      <div class="metric-card delete">
+        <div class="metric-header">
+          <span class="metric-label">DELETE</span>
+          <span class="material-symbols-outlined metric-icon delete">delete</span>
+        </div>
+        <div class="metric-value" id="stat-deletes">0</div>
+        <div class="metric-glow delete"></div>
+      </div>
 
-  <!-- ── Filter bar ─────────────────────────────────────────────────────── -->
-  <div class="filter-bar glass" role="search" aria-label="Filter events">
-    <span class="filter-label">Filter</span>
+    </section>
 
-    <select id="filter-action" class="filter-select" aria-label="Filter by action">
-      <option value="">All Actions</option>
-      <option value="INSERT">INSERT</option>
-      <option value="UPDATE">UPDATE</option>
-      <option value="DELETE">DELETE</option>
-      <option value="SNAPSHOT">SNAPSHOT</option>
-    </select>
+    <!-- ── Filter Bar ───────────────────────────────────────────────────── -->
+    <div class="filter-bar" role="search" aria-label="Filter events">
+      <div class="filter-inputs">
+        <div class="select-wrap">
+          <select id="filter-action" class="filter-select" aria-label="Filter by action">
+            <option value="">Action: All</option>
+            <option value="INSERT">Action: INSERT</option>
+            <option value="UPDATE">Action: UPDATE</option>
+            <option value="DELETE">Action: DELETE</option>
+            <option value="SNAPSHOT">Action: SNAPSHOT</option>
+          </select>
+          <span class="material-symbols-outlined select-arrow">arrow_drop_down</span>
+        </div>
 
-    <input id="filter-from" type="date" class="filter-input" aria-label="From date" />
-    <span style="color: var(--text-muted); font-size: 13px;">→</span>
-    <input id="filter-to"   type="date" class="filter-input" aria-label="To date" />
+        <div class="date-range-wrap">
+          <span class="material-symbols-outlined date-icon">calendar_today</span>
+          <input id="filter-from" type="date" class="filter-input date-input" aria-label="From date" />
+          <span class="date-sep">→</span>
+          <input id="filter-to" type="date" class="filter-input date-input" aria-label="To date" />
+        </div>
+      </div>
 
-    <button id="btn-apply" class="filter-btn primary">Apply</button>
-    <button id="btn-clear" class="filter-btn secondary">Clear</button>
-  </div>
-
-  <!-- ── Table ──────────────────────────────────────────────────────────── -->
-  <div class="table-wrapper">
-    <table aria-label="Audit log events">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Timestamp</th>
-          <th>Table</th>
-          <th>Action</th>
-          <th>Record ID</th>
-          <th>Detail</th>
-        </tr>
-      </thead>
-      <tbody id="logs-tbody">
-        <tr>
-          <td colspan="6" class="empty-state">
-            <div class="empty-state-icon">⏳</div>
-            Loading events...
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Pagination -->
-    <div class="pagination">
-      <span id="pagination-info" style="color: var(--text-muted); font-size: 13px;">—</span>
-      <div class="pagination-btns">
-        <button id="btn-prev" class="btn-page" disabled>← Prev</button>
-        <button id="btn-next" class="btn-page" disabled>Next →</button>
+      <div class="filter-actions">
+        <button id="btn-apply" class="filter-btn primary">
+          <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
+          Apply Filters
+        </button>
+        <button id="btn-clear" class="filter-btn secondary">
+          <span class="material-symbols-outlined" style="font-size:18px">clear</span>
+          Clear
+        </button>
       </div>
     </div>
-  </div>
 
-</div><!-- /page-wrapper -->
+    <!-- ── Audit Log Table ──────────────────────────────────────────────── -->
+    <div class="table-card">
+      <div class="table-scroll">
+        <table aria-label="Audit log events">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Timestamp</th>
+              <th>Table</th>
+              <th>Action</th>
+              <th>Record ID</th>
+              <th class="text-right">Detail</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr>
+              <td colspan="6" class="empty-state">
+                <div class="empty-state-icon">⏳</div>
+                Loading events...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-<!-- ── Toast container ────────────────────────────────────────────────────── -->
+      <!-- Pagination -->
+      <div class="pagination">
+        <span id="pagination-info" class="pagination-info">—</span>
+        <div class="pagination-btns">
+          <button id="btn-prev" class="btn-page" disabled>
+            <span class="material-symbols-outlined" style="font-size:18px">chevron_left</span>
+          </button>
+          <button id="btn-next" class="btn-page" disabled>
+            <span class="material-symbols-outlined" style="font-size:18px">chevron_right</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+</div><!-- /main-wrap -->
+
+<!-- ── Toast container ──────────────────────────────────────────────────────── -->
 <div id="toast-container" aria-live="polite" aria-label="Event notifications"></div>
 
+<!-- ── Mobile sidebar overlay ─────────────────────────────────────────────── -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
 <script src="/assets/app.js"></script>
+<script>
+  // Mobile sidebar toggle
+  const menuToggle = document.getElementById('menu-toggle');
+  const sidebar    = document.getElementById('sidebar');
+  const overlay    = document.getElementById('sidebar-overlay');
+
+  menuToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('visible');
+  });
+  overlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+  });
+</script>
 </body>
 </html>

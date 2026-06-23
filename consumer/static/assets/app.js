@@ -97,6 +97,7 @@ function setLiveStatus(connected) {
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
+    if (res.status === 401) { window.location.href = '/login.html'; return; }
     if (!res.ok) return;
     const stats = await res.json();
     animateStat('stat-total',    stats.total    ?? 0);
@@ -113,6 +114,7 @@ async function loadLogs() {
   const params = buildParams();
   try {
     const res = await fetch(`/api/audit-logs?${params}`);
+    if (res.status === 401) { window.location.href = '/login.html'; return; }
     if (!res.ok) throw new Error('Network error');
     const data = await res.json();
     currentTotal = data.total ?? 0;
