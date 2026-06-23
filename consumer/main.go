@@ -7,40 +7,94 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
+	"cdc-demo/consumer/handler"
+	"cdc-demo/consumer/model"
+	"cdc-demo/consumer/store"
+
 	"github.com/segmentio/kafka-go"
 )
+
+// ---- Debezium envelope types ------------------------------------------------
 
 type debeziumEnvelope struct {
 	Payload debeziumPayload `json:"payload"`
 }
 
 type debeziumPayload struct {
-	Before *userEvent `json:"before"`
-	After  *userEvent `json:"after"`
-	Op     string     `json:"op"`
+	Before json.RawMessage  `json:"before"`
+	After  json.RawMessage  `json:"after"`
+	Op     string           `json:"op"`
+	Source *debeziumSource  `json:"source"`
 }
 
-type userEvent struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	CreatedAt int64  `json:"created_at,omitempty"`
+type debeziumSource struct {
+	DB     string `json:"db"`
+	Schema string `json:"schema"`
+	Table  string `json:"table"`
 }
+
+// ---- Main -------------------------------------------------------------------
 
 func main() {
 	var (
-		broker = flag.String("broker", "localhost:9092", "Kafka broker address")
-		topic  = flag.String("topic", "cdc_postgres.public.users", "Kafka topic name")
-		group  = flag.String("group", "users-consumer", "Kafka consumer group")
+		broker   = flag.String("broker", "localhost:9092", "Kafka broker address")
+		topic    = flag.String("topic", "cdc_postgres.public.orders", "Kafka topic name")
+		group    = flag.String("group", "orders-consumer", "Kafka consumer group")
+		dbPath   = flag.String("db", "./audit.db", "SQLite database path")
+		httpAddr = flag.String("addr", ":8090", "HTTP server address for dashboard")
 	)
 	flag.Parse()
 
+	// ── Audit database ───────────────────────────────────────────────────────
+	db, err := store.InitDB(*dbPath)
+	if err != nil {
+		log.Fatalf("init db: %v", err)
+	}
+	defer db.Close()
+	log.Printf("audit database ready at %s", *dbPath)
+
+	// ── WebSocket hub ─────────────────────────────────────────────────────────
+	hub := handler.NewHub()
+	go hub.Run()
+
+	// ── HTTP server (dashboard + API) ─────────────────────────────────────────
+	api := &handler.APIHandler{DB: db}
+	mux := http.NewServeMux()
+
+	// Static files
+	mux.Handle("/", http.FileServer(http.Dir("./static")))
+
+	// WebSocket endpoint
+	mux.HandleFunc("/ws", hub.ServeWS)
+
+	// REST API
+	mux.HandleFunc("/api/stats", api.GetStats)
+	mux.HandleFunc("/api/audit-logs", func(w http.ResponseWriter, r *http.Request) {
+		// Route /api/audit-logs  vs  /api/audit-logs/{id}
+		path := strings.TrimSuffix(r.URL.Path, "/")
+		if path == "/api/audit-logs" {
+			api.ListAuditLogs(w, r)
+		} else {
+			api.GetAuditLog(w, r)
+		}
+	})
+
+	srv := &http.Server{Addr: *httpAddr, Handler: mux}
+	go func() {
+		log.Printf("dashboard available at http://localhost%s", *httpAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Printf("http server error: %v", err)
+		}
+	}()
+
+	// ── Kafka consumer ────────────────────────────────────────────────────────
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -64,6 +118,7 @@ func main() {
 		if err != nil {
 			if ctx.Err() != nil {
 				log.Println("consumer stopped")
+				srv.Shutdown(context.Background()) //nolint:errcheck
 				return
 			}
 			log.Printf("read message error: %v", err)
@@ -77,7 +132,7 @@ func main() {
 		}
 
 		if !json.Valid(msg.Value) {
-			log.Printf("skip non-json message at offset %d: %s", msg.Offset, string(msg.Value))
+			log.Printf("skip non-json message at offset %d", msg.Offset)
 			continue
 		}
 
@@ -91,9 +146,26 @@ func main() {
 			continue
 		}
 
+		// Print to terminal (original behaviour preserved).
 		printEvent(payload)
+
+		// Build and persist audit log entry.
+		entry := buildAuditLog(payload, msg.Value, *topic)
+		id, err := store.SaveAuditLog(db, entry)
+		if err != nil {
+			log.Printf("save audit log: %v", err)
+		} else {
+			entry.ID = id
+			// Broadcast to all connected dashboard clients (without raw payload for bandwidth).
+			broadcast := *entry
+			broadcast.RawPayload = ""
+			hub.Broadcast(broadcast)
+			log.Printf("saved audit log id=%d action=%s table=%s", id, entry.Action, entry.TableName)
+		}
 	}
 }
+
+// ---- Kafka helpers ----------------------------------------------------------
 
 func newKafkaDialer(broker string) *kafka.Dialer {
 	brokerHost := hostFromAddress(broker)
@@ -101,15 +173,13 @@ func newKafkaDialer(broker string) *kafka.Dialer {
 		Timeout:   10 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
-
 	return &kafka.Dialer{
 		Timeout: 10 * time.Second,
-		DialFunc: func(ctx context.Context, network string, address string) (net.Conn, error) {
+		DialFunc: func(ctx context.Context, network, address string) (net.Conn, error) {
 			host, port, err := net.SplitHostPort(address)
 			if err == nil && strings.EqualFold(host, "kafka") {
 				address = net.JoinHostPort(brokerHost, port)
 			}
-
 			return netDialer.DialContext(ctx, network, address)
 		},
 	}
@@ -120,59 +190,120 @@ func hostFromAddress(address string) string {
 	if err != nil || host == "" {
 		return "localhost"
 	}
-
 	return host
 }
 
+// ---- Debezium parsing -------------------------------------------------------
+
 func parseDebeziumPayload(value []byte) (debeziumPayload, bool, error) {
-	var envelope debeziumEnvelope
-	if err := json.Unmarshal(value, &envelope); err != nil {
+	// Try wrapped envelope first.
+	var env debeziumEnvelope
+	if err := json.Unmarshal(value, &env); err != nil {
 		return debeziumPayload{}, false, err
 	}
-	if envelope.Payload.hasRowData() {
-		return envelope.Payload, true, nil
+	if env.Payload.hasRowData() {
+		return env.Payload, true, nil
 	}
 
-	var payload debeziumPayload
-	if err := json.Unmarshal(value, &payload); err != nil {
+	// Try flat payload.
+	var p debeziumPayload
+	if err := json.Unmarshal(value, &p); err != nil {
 		return debeziumPayload{}, false, err
 	}
-	if payload.hasRowData() {
-		return payload, true, nil
+	if p.hasRowData() {
+		return p, true, nil
 	}
 
 	return debeziumPayload{}, false, nil
 }
 
-func (payload debeziumPayload) hasRowData() bool {
-	return payload.Op != "" || payload.Before != nil || payload.After != nil
+func (p debeziumPayload) hasRowData() bool {
+	return p.Op != "" || !isNull(p.Before) || !isNull(p.After)
 }
 
-func printEvent(payload debeziumPayload) {
-	operation := operationLabel(payload.Op)
-	current := payload.After
-	if current == nil {
-		current = payload.Before
+func isNull(b json.RawMessage) bool {
+	return b == nil || len(b) == 0 || string(b) == "null"
+}
+
+// ---- Event helpers ----------------------------------------------------------
+
+func buildAuditLog(p debeziumPayload, raw []byte, topic string) *model.AuditLog {
+	action := operationLabel(p.Op)
+	tableName := tableNameFromPayload(p, topic)
+
+	var beforeStr, afterStr *string
+	if !isNull(p.Before) {
+		s := string(p.Before)
+		beforeStr = &s
+	}
+	if !isNull(p.After) {
+		s := string(p.After)
+		afterStr = &s
 	}
 
-	if current == nil {
-		fmt.Println("=================================")
-		fmt.Println("EVENT RECEIVED")
-		fmt.Printf("Operation : %s\n", operation)
-		fmt.Println("No row payload found")
-		fmt.Println("=================================")
-		fmt.Println()
-		return
+	recordID := extractRecordID(p.After)
+	if recordID == "" {
+		recordID = extractRecordID(p.Before)
+	}
+
+	rawStr := string(raw)
+	return &model.AuditLog{
+		EventTime:  time.Now().UTC(),
+		TableName:  tableName,
+		Action:     action,
+		RecordID:   recordID,
+		BeforeData: beforeStr,
+		AfterData:  afterStr,
+		RawPayload: rawStr,
+	}
+}
+
+func tableNameFromPayload(p debeziumPayload, topic string) string {
+	if p.Source != nil && p.Source.Table != "" {
+		if p.Source.Schema != "" {
+			return p.Source.Schema + "." + p.Source.Table
+		}
+		return p.Source.Table
+	}
+	// Fallback: parse from topic name (prefix.schema.table).
+	parts := strings.SplitN(topic, ".", 3)
+	if len(parts) == 3 {
+		return parts[1] + "." + parts[2]
+	}
+	return topic
+}
+
+func extractRecordID(data json.RawMessage) string {
+	if isNull(data) {
+		return ""
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal(data, &m); err != nil {
+		return ""
+	}
+	if v, ok := m["id"]; ok {
+		return fmt.Sprintf("%v", v)
+	}
+	return ""
+}
+
+func printEvent(p debeziumPayload) {
+	op := operationLabel(p.Op)
+	current := p.After
+	if isNull(current) {
+		current = p.Before
 	}
 
 	fmt.Println("=================================")
 	fmt.Println("EVENT RECEIVED")
-	fmt.Printf("Operation : %s\n", operation)
-	fmt.Printf("ID        : %d\n", current.ID)
-	fmt.Printf("Name      : %s\n", current.Name)
-	fmt.Printf("Email     : %s\n", current.Email)
-	if current.CreatedAt != 0 {
-		fmt.Printf("CreatedAt : %d\n", current.CreatedAt)
+	fmt.Printf("Operation : %s\n", op)
+	if !isNull(current) {
+		var m map[string]interface{}
+		if err := json.Unmarshal(current, &m); err == nil {
+			for k, v := range m {
+				fmt.Printf("%-10s: %v\n", k, v)
+			}
+		}
 	}
 	fmt.Println("=================================")
 	fmt.Println()
@@ -181,7 +312,7 @@ func printEvent(payload debeziumPayload) {
 func operationLabel(op string) string {
 	switch op {
 	case "c":
-		return "CREATE"
+		return "INSERT"
 	case "u":
 		return "UPDATE"
 	case "d":
