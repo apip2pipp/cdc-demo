@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CDC Audit Trail Dashboard</title>
+  <meta name="description" content="Real-time audit trail dashboard untuk monitoring CDC events dari PostgreSQL via Debezium & Kafka." />
+  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="header-icon">📋</div>
+      <div>
+        <div class="header-title">CDC Audit Trail</div>
+        <div class="header-subtitle">PostgreSQL · Debezium · Kafka · Real-time</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div id="live-badge" class="live-badge disconnected">
+        <span class="live-dot"></span>
+        <span id="live-text">CONNECTING</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Stat cards ─────────────────────────────────────────────────────── -->
+  <section class="stats-grid" aria-label="Summary statistics">
+
+    <div class="stat-card glass total">
+      <div class="stat-label"><span class="stat-label-dot"></span>Total Events</div>
+      <div class="stat-value" id="stat-total">0</div>
+    </div>
+
+    <div class="stat-card glass insert">
+      <div class="stat-label"><span class="stat-label-dot"></span>Insert</div>
+      <div class="stat-value" id="stat-inserts">0</div>
+    </div>
+
+    <div class="stat-card glass update">
+      <div class="stat-label"><span class="stat-label-dot"></span>Update</div>
+      <div class="stat-value" id="stat-updates">0</div>
+    </div>
+
+    <div class="stat-card glass delete">
+      <div class="stat-label"><span class="stat-label-dot"></span>Delete</div>
+      <div class="stat-value" id="stat-deletes">0</div>
+    </div>
+
+  </section>
+
+  <!-- ── Filter bar ─────────────────────────────────────────────────────── -->
+  <div class="filter-bar glass" role="search" aria-label="Filter events">
+    <span class="filter-label">Filter</span>
+
+    <select id="filter-action" class="filter-select" aria-label="Filter by action">
+      <option value="">All Actions</option>
+      <option value="INSERT">INSERT</option>
+      <option value="UPDATE">UPDATE</option>
+      <option value="DELETE">DELETE</option>
+      <option value="SNAPSHOT">SNAPSHOT</option>
+    </select>
+
+    <input id="filter-from" type="date" class="filter-input" aria-label="From date" />
+    <span style="color: var(--text-muted); font-size: 13px;">→</span>
+    <input id="filter-to"   type="date" class="filter-input" aria-label="To date" />
+
+    <button id="btn-apply" class="filter-btn primary">Apply</button>
+    <button id="btn-clear" class="filter-btn secondary">Clear</button>
+  </div>
+
+  <!-- ── Table ──────────────────────────────────────────────────────────── -->
+  <div class="table-wrapper">
+    <table aria-label="Audit log events">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Table</th>
+          <th>Action</th>
+          <th>Record ID</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody id="logs-tbody">
+        <tr>
+          <td colspan="6" class="empty-state">
+            <div class="empty-state-icon">⏳</div>
+            Loading events...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <span id="pagination-info" style="color: var(--text-muted); font-size: 13px;">—</span>
+      <div class="pagination-btns">
+        <button id="btn-prev" class="btn-page" disabled>← Prev</button>
+        <button id="btn-next" class="btn-page" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-wrapper -->
+
+<!-- ── Toast container ────────────────────────────────────────────────────── -->
+<div id="toast-container" aria-live="polite" aria-label="Event notifications"></div>
+
+<script src="/assets/app.js"></script>
+</body>
+</html>
