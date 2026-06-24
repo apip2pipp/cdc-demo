@@ -21,6 +21,14 @@
     "topic.creation.enable": "true",
     "topic.creation.default.partitions": "1",
     "topic.creation.default.replication.factor": "1",
-    "include.schema.changes": "false"
+    "include.schema.changes": "false",
+    "transforms": "canonicalize,hash",
+    "transforms.canonicalize.type": "com.afif.cdc.smt.CanonicalizeValue",
+    "transforms.canonicalize.input.field": "after",
+    "transforms.canonicalize.fallback.field": "before",
+    "transforms.canonicalize.output.field": "canonical_payload",
+    "transforms.hash.type": "com.afif.cdc.smt.Sha256HashValue",
+    "transforms.hash.input.field": "canonical_payload",
+    "transforms.hash.output.field": "hash"
   }
 }
