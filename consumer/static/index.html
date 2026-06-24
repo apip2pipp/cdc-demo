@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="stylesheet" href="/assets/style.css?v=integrity-1" />
 </head>
 <body>
 
@@ -168,12 +168,13 @@
               <th>Table</th>
               <th>Action</th>
               <th>Record ID</th>
+              <th>Integrity</th>
               <th class="text-right">Detail</th>
             </tr>
           </thead>
           <tbody id="logs-tbody">
             <tr>
-              <td colspan="6" class="empty-state">
+              <td colspan="7" class="empty-state">
                 <div class="empty-state-icon">⏳</div>
                 Loading events...
               </td>
@@ -205,7 +206,7 @@
 <!-- ── Mobile sidebar overlay ─────────────────────────────────────────────── -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-<script src="/assets/app.js"></script>
+<script src="/assets/app.js?v=integrity-1"></script>
 <script>
   // Mobile sidebar toggle
   const menuToggle = document.getElementById('menu-toggle');
@@ -259,6 +260,33 @@
         </div>
       </div>
     </div>
+
+    <section class="integrity-panel" aria-label="Integrity proof">
+      <div class="integrity-header">
+        <div>
+          <div class="integrity-eyebrow">Integrity Proof</div>
+          <div id="integrity-status" class="integrity-status pending">
+            <span class="material-symbols-outlined integrity-status-icon">pending</span>
+            <span>Waiting for hash</span>
+          </div>
+        </div>
+        <div class="integrity-source">
+          <span class="integrity-source-label">Hash Source</span>
+          <span id="integrity-source-value" class="integrity-source-value">-</span>
+        </div>
+      </div>
+
+      <div class="integrity-grid">
+        <div class="integrity-field">
+          <div class="integrity-label">Canonical Payload</div>
+          <pre id="integrity-canonical" class="integrity-code">No canonical payload stored.</pre>
+        </div>
+        <div class="integrity-field">
+          <div class="integrity-label">SHA-256 Hash</div>
+          <code id="integrity-hash" class="integrity-hash">No hash stored.</code>
+        </div>
+      </div>
+    </section>
     
     <div class="modal-footer">
       <div class="diff-stats" id="diff-stats"></div>

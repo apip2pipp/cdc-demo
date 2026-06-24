@@ -4,14 +4,17 @@ import "time"
 
 // AuditLog represents a single CDC event stored in the audit database.
 type AuditLog struct {
-	ID         int64     `json:"id"`
-	EventTime  time.Time `json:"event_time"`
-	TableName  string    `json:"table_name"`
-	Action     string    `json:"action"`
-	RecordID   string    `json:"record_id,omitempty"`
-	BeforeData *string   `json:"before_data"`
-	AfterData  *string   `json:"after_data"`
-	RawPayload string    `json:"raw_payload,omitempty"`
+	ID               int64     `json:"id"`
+	EventTime        time.Time `json:"event_time"`
+	TableName        string    `json:"table_name"`
+	Action           string    `json:"action"`
+	RecordID         string    `json:"record_id,omitempty"`
+	BeforeData       *string   `json:"before_data"`
+	AfterData        *string   `json:"after_data"`
+	CanonicalPayload string    `json:"canonical_payload,omitempty"`
+	Hash             string    `json:"hash,omitempty"`
+	HashSource       string    `json:"hash_source,omitempty"`
+	RawPayload       string    `json:"raw_payload,omitempty"`
 }
 
 // AuditLogFilter holds query parameters for listing audit logs.

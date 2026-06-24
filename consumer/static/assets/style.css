@@ -636,7 +636,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 720px;
+  min-width: 860px;
   text-align: left;
 }
 
@@ -686,6 +686,29 @@ tbody tr:hover .td-id { color: var(--clr-primary); }
 .td-table { font-weight: 700; }
 
 .td-record { color: var(--clr-primary-container); }
+
+.td-integrity { min-width: 150px; }
+
+.hash-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 150px;
+  padding: 3px 8px;
+  border: 1px solid rgba(34,197,94,.25);
+  border-radius: var(--r-sm);
+  background: rgba(34,197,94,.08);
+  color: var(--clr-insert);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hash-chip.muted {
+  border-color: rgba(135,146,154,.25);
+  background: rgba(135,146,154,.08);
+  color: var(--clr-text-muted);
+}
 
 /* Action badges */
 .action-badge {
@@ -751,6 +774,11 @@ tbody tr:hover .td-id { color: var(--clr-primary); }
   transition: background 0.2s, transform 0.1s;
   white-space: nowrap;
   float: right;
+}
+
+.btn-detail-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .btn-detail:hover  { background: rgba(142,213,255,.1); }
@@ -1077,6 +1105,9 @@ details[open] .raw-chevron { transform: rotate(90deg); }
 
   /* Stack diff grid */
   .diff-grid { grid-template-columns: 1fr; }
+  .integrity-header { flex-direction: column; }
+  .integrity-source { align-items: flex-start; }
+  .integrity-grid { grid-template-columns: 1fr; }
 
   /* Compact topbar */
   .topbar { padding: 0 var(--sp-md); }
@@ -1122,7 +1153,7 @@ details[open] .raw-chevron { transform: rotate(90deg); }
   border: 1px solid #334155;
   border-radius: var(--r-lg);
   width: 100%;
-  max-width: 1024px;
+  max-width: 1120px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -1293,6 +1324,124 @@ details[open] .raw-chevron { transform: rotate(90deg); }
 .json-boolean { color: #c0c1ff; }
 .json-null    { color: #87929a; font-style: italic; }
 .null-state   { color: var(--clr-text-muted); font-style: italic; }
+
+.integrity-panel {
+  border-top: 1px solid #334155;
+  background: linear-gradient(180deg, rgba(19, 27, 46, 0.98), rgba(15, 23, 42, 0.98));
+  padding: var(--sp-md) var(--sp-lg);
+}
+
+.integrity-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  margin-bottom: var(--sp-md);
+}
+
+.integrity-eyebrow,
+.integrity-label,
+.integrity-source-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--clr-text-variant);
+}
+
+.integrity-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  margin-top: var(--sp-xs);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(135,146,154,.25);
+  color: var(--clr-text-variant);
+  background: rgba(135,146,154,.08);
+}
+
+.integrity-status.verified {
+  border-color: rgba(34,197,94,.3);
+  color: var(--clr-insert);
+  background: rgba(34,197,94,.1);
+}
+
+.integrity-status.mismatch,
+.integrity-status.missing {
+  border-color: rgba(239,68,68,.3);
+  color: var(--clr-delete);
+  background: rgba(239,68,68,.1);
+}
+
+.integrity-status.pending {
+  border-color: rgba(142,213,255,.3);
+  color: var(--clr-primary);
+  background: rgba(142,213,255,.08);
+}
+
+.integrity-status-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.integrity-source {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.integrity-source-value {
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: rgba(142,213,255,.08);
+  border: 1px solid rgba(142,213,255,.2);
+  color: var(--clr-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.integrity-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, .8fr);
+  gap: var(--sp-md);
+}
+
+.integrity-field {
+  min-width: 0;
+}
+
+.integrity-code,
+.integrity-hash {
+  display: block;
+  width: 100%;
+  margin-top: var(--sp-xs);
+  padding: var(--sp-sm);
+  border: 1px solid #334155;
+  border-radius: var(--r-sm);
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.integrity-code {
+  max-height: 108px;
+  overflow: auto;
+}
+
+.integrity-hash {
+  color: var(--clr-insert);
+}
 
 .modal-footer {
   padding: var(--sp-md) var(--sp-lg);

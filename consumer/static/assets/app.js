@@ -1,11 +1,11 @@
-/* ── State ────────────────────────────────────────────────────────────────── */
+﻿/* â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const PAGE_SIZE = 50;
 let currentOffset = 0;
 let currentTotal  = 0;
 let currentFilter = { action: '', from: '', to: '' };
 let ws = null;
 
-/* ── Init ─────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 document.addEventListener('DOMContentLoaded', () => {
   loadStats();
   loadLogs();
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* ── WebSocket ────────────────────────────────────────────────────────────── */
+/* â”€â”€ WebSocket â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   ws = new WebSocket(`${proto}//${location.host}/ws`);
@@ -93,7 +93,7 @@ function setLiveStatus(connected) {
   }
 }
 
-/* ── API ──────────────────────────────────────────────────────────────────── */
+/* â”€â”€ API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
@@ -109,7 +109,7 @@ async function loadStats() {
 
 async function loadLogs() {
   const tbody = document.getElementById('logs-tbody');
-  tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">⏳</div>Loading...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">â³</div>Loading...</td></tr>`;
 
   const params = buildParams();
   try {
@@ -121,7 +121,7 @@ async function loadLogs() {
     renderTable(data.data ?? []);
     renderPagination();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">⚠️</div>Failed to load logs</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">âš ï¸</div>Failed to load logs</td></tr>`;
   }
 }
 
@@ -133,15 +133,15 @@ function buildParams() {
   return p.toString();
 }
 
-/* ── Render ───────────────────────────────────────────────────────────────── */
+/* â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function renderTable(logs) {
   const tbody = document.getElementById('logs-tbody');
   tbody.innerHTML = '';
 
   if (!logs.length) {
     tbody.innerHTML = `
-      <tr><td colspan="6" class="empty-state">
-        <div class="empty-state-icon">📭</div>
+      <tr><td colspan="7" class="empty-state">
+        <div class="empty-state-icon">ðŸ“­</div>
         No events found. Try adjusting your filters.
       </td></tr>`;
     return;
@@ -155,8 +155,9 @@ function createRow(log, isNew = false) {
   if (isNew) tr.classList.add('row-new');
 
   const time = formatTime(log.event_time);
-  const table = log.table_name ? log.table_name.split('.').pop() : '—';
-  const recordId = log.record_id || '—';
+  const table = log.table_name ? log.table_name.split('.').pop() : 'â€”';
+  const recordId = log.record_id || 'â€”';
+  const hashPreview = formatHashPreview(log.hash);
 
   tr.innerHTML = `
     <td class="td-id">#${log.id}</td>
@@ -164,7 +165,8 @@ function createRow(log, isNew = false) {
     <td class="td-table" title="${log.table_name}">${escHtml(table)}</td>
     <td>${actionBadge(log.action)}</td>
     <td class="td-record">${escHtml(recordId)}</td>
-    <td><button class="btn-detail" onclick="openDetailModal(${log.id})">↗ Detail</button></td>
+    <td class="td-integrity">${hashPreview}</td>
+    <td><button class="btn-detail" onclick="openDetailModal(${log.id})"><span class="material-symbols-outlined btn-detail-icon" aria-hidden="true">open_in_new</span><span>Detail</span></button></td>
   `;
   return tr;
 }
@@ -188,13 +190,13 @@ function renderPagination() {
   const to   = Math.min(currentOffset + PAGE_SIZE, currentTotal);
 
   document.getElementById('pagination-info').textContent =
-    currentTotal === 0 ? 'No events' : `${from}–${to} of ${currentTotal.toLocaleString()} events`;
+    currentTotal === 0 ? 'No events' : `${from}â€“${to} of ${currentTotal.toLocaleString()} events`;
 
   document.getElementById('btn-prev').disabled = currentOffset === 0;
   document.getElementById('btn-next').disabled = currentOffset + PAGE_SIZE >= currentTotal;
 }
 
-/* ── Stats animation ──────────────────────────────────────────────────────── */
+/* â”€â”€ Stats animation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function animateStat(id, target) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -231,12 +233,12 @@ function updateStatsBump(action) {
   });
 }
 
-/* ── Toast ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function showToast(event) {
-  const icons = { INSERT: '🟢', UPDATE: '🟡', DELETE: '🔴', SNAPSHOT: '🔵' };
-  const icon = icons[event.action] || '⚪';
+  const icons = { INSERT: 'ðŸŸ¢', UPDATE: 'ðŸŸ¡', DELETE: 'ðŸ”´', SNAPSHOT: 'ðŸ”µ' };
+  const icon = icons[event.action] || 'âšª';
   const table = event.table_name ? event.table_name.split('.').pop() : 'unknown';
-  const id    = event.record_id  ? ` · ID ${event.record_id}` : '';
+  const id    = event.record_id  ? ` Â· ID ${event.record_id}` : '';
 
   const toast = document.createElement('div');
   toast.className = 'toast';
@@ -255,14 +257,23 @@ function showToast(event) {
   }, 3500);
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────────── */
+/* â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function actionBadge(action) {
   const a = (action || '').toUpperCase();
   return `<span class="action-badge badge-${a}"><span class="action-badge-dot"></span>${a}</span>`;
 }
 
+function formatHashPreview(hash) {
+  if (!hash) {
+    return '<span class="hash-chip muted">No hash</span>';
+  }
+  const clean = String(hash);
+  const preview = clean.length > 16 ? `${clean.slice(0, 8)}...${clean.slice(-6)}` : clean;
+  return `<span class="hash-chip" title="${escHtml(clean)}">${escHtml(preview)}</span>`;
+}
+
 function formatTime(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'â€”';
   try {
     const d = new Date(iso);
     return d.toLocaleString('id-ID', {
@@ -281,7 +292,7 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-/* ── Modal Detail ────────────────────────────────────────────────────────── */
+/* â”€â”€ Modal Detail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 async function openDetailModal(id) {
   const modal = document.getElementById('detail-modal');
   modal.classList.add('visible');
@@ -292,6 +303,7 @@ async function openDetailModal(id) {
   
   tbodyBefore.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] null-state">Loading...</td></tr>`;
   tbodyAfter.innerHTML = `<tr><td colspan="2" class="pl-md py-[2px] null-state">Loading...</td></tr>`;
+  renderIntegrityPanel(null);
   
   try {
     const res = await fetch(`/api/audit-logs/${id}`);
@@ -343,8 +355,8 @@ function renderModalDiff(log) {
     badge.style.borderColor = 'var(--clr-primary)';
   }
 
-  const beforeStr = log.before_data ? JSON.stringify(log.before_data, null, 2) : 'null';
-  const afterStr = log.after_data ? JSON.stringify(log.after_data, null, 2) : 'null';
+  const beforeStr = prettyJson(log.before_data);
+  const afterStr = prettyJson(log.after_data);
   
   const beforeLines = beforeStr.split('\n');
   const afterLines = afterStr.split('\n');
@@ -392,6 +404,92 @@ function renderModalDiff(log) {
     <div class="diff-stat-item"><span class="diff-stat-dot rem"></span> ${rems} Removals</div>
     <div class="diff-stat-item"><span class="diff-stat-dot add"></span> ${adds} Additions</div>
   `;
+
+  renderIntegrityPanel(log);
+}
+
+function renderIntegrityPanel(log) {
+  const status = document.getElementById('integrity-status');
+  const source = document.getElementById('integrity-source-value');
+  const canonical = document.getElementById('integrity-canonical');
+  const hash = document.getElementById('integrity-hash');
+
+  if (!status || !source || !canonical || !hash) return;
+
+  if (!log) {
+    setIntegrityStatus('pending', 'pending', 'Waiting for hash');
+    source.textContent = '-';
+    canonical.textContent = 'No canonical payload stored.';
+    hash.textContent = 'No hash stored.';
+    return;
+  }
+
+  const canonicalPayload = log.canonical_payload || '';
+  const eventHash = log.hash || '';
+
+  source.textContent = log.hash_source || inferHashSource(log);
+  canonical.textContent = canonicalPayload ? prettyJson(canonicalPayload) : 'No canonical payload stored.';
+  hash.textContent = eventHash || 'No hash stored.';
+
+  if (!canonicalPayload || !eventHash) {
+    setIntegrityStatus('missing', 'block', 'No SMT hash stored');
+    return;
+  }
+
+  setIntegrityStatus('pending', 'hourglass_top', 'Verifying SHA-256');
+  verifyHash(canonicalPayload, eventHash)
+    .then(matches => {
+      if (matches) {
+        setIntegrityStatus('verified', 'verified', 'Verified');
+      } else {
+        setIntegrityStatus('mismatch', 'warning', 'Hash mismatch');
+      }
+    })
+    .catch(() => {
+      setIntegrityStatus('pending', 'help', 'Unable to verify in browser');
+    });
+}
+
+function setIntegrityStatus(kind, icon, text) {
+  const status = document.getElementById('integrity-status');
+  if (!status) return;
+  status.className = `integrity-status ${kind}`;
+  status.innerHTML = `
+    <span class="material-symbols-outlined integrity-status-icon">${icon}</span>
+    <span>${escHtml(text)}</span>
+  `;
+}
+
+async function verifyHash(canonicalPayload, expectedHash) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Web Crypto is not available');
+  }
+  const bytes = new TextEncoder().encode(canonicalPayload);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  const actual = Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+  return actual === String(expectedHash).toLowerCase();
+}
+
+function inferHashSource(log) {
+  if (log.after_data) return 'AFTER';
+  if (log.before_data) return 'BEFORE';
+  return '-';
+}
+
+function prettyJson(value) {
+  if (value === null || value === undefined || value === '') {
+    return 'null';
+  }
+  if (typeof value === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch (_) {
+      return value;
+    }
+  }
+  return JSON.stringify(value, null, 2);
 }
 
 function highlightJson(line) {
@@ -414,3 +512,4 @@ function highlightJson(line) {
       return '<span class="' + cls + '">' + match + '</span>';
     });
 }
+

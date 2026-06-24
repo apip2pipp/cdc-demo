@@ -28,10 +28,12 @@ type debeziumEnvelope struct {
 }
 
 type debeziumPayload struct {
-	Before json.RawMessage  `json:"before"`
-	After  json.RawMessage  `json:"after"`
-	Op     string           `json:"op"`
-	Source *debeziumSource  `json:"source"`
+	Before           json.RawMessage `json:"before"`
+	After            json.RawMessage `json:"after"`
+	Op               string          `json:"op"`
+	Source           *debeziumSource `json:"source"`
+	CanonicalPayload string          `json:"canonical_payload"`
+	Hash             string          `json:"hash"`
 }
 
 type debeziumSource struct {
@@ -268,14 +270,30 @@ func buildAuditLog(p debeziumPayload, raw []byte, topic string) *model.AuditLog 
 
 	rawStr := string(raw)
 	return &model.AuditLog{
-		EventTime:  time.Now().UTC(),
-		TableName:  tableName,
-		Action:     action,
-		RecordID:   recordID,
-		BeforeData: beforeStr,
-		AfterData:  afterStr,
-		RawPayload: rawStr,
+		EventTime:        time.Now().UTC(),
+		TableName:        tableName,
+		Action:           action,
+		RecordID:         recordID,
+		BeforeData:       beforeStr,
+		AfterData:        afterStr,
+		CanonicalPayload: p.CanonicalPayload,
+		Hash:             p.Hash,
+		HashSource:       hashSourceFromPayload(p),
+		RawPayload:       rawStr,
 	}
+}
+
+func hashSourceFromPayload(p debeziumPayload) string {
+	if p.CanonicalPayload == "" && p.Hash == "" {
+		return ""
+	}
+	if !isNull(p.After) {
+		return "AFTER"
+	}
+	if !isNull(p.Before) {
+		return "BEFORE"
+	}
+	return ""
 }
 
 func tableNameFromPayload(p debeziumPayload, topic string) string {
