@@ -1,52 +1,98 @@
-# CDC Demo Lokal
+# CDC Audit Trail Dashboard
 
-Project ini mensimulasikan alur CDC lokal:
+Real-time audit trail dashboard di atas stack CDC: **PostgreSQL → Debezium → Kafka → Go Consumer → Dashboard Web**.
 
-PostgreSQL lokal -> WAL -> Debezium -> Kafka -> Golang consumer
-
-## Struktur Folder
-
-- `docker-compose.yml` untuk Kafka, Debezium Connect, dan Kafka UI.
-- `sql/orders.sql` untuk tabel `orders` dan publication.
-- `connector/postgres-orders.json` untuk payload register connector.
-- `consumer/` untuk consumer Golang sederhana.
+---
 
 ## Prasyarat
 
-- PostgreSQL lokal sudah aktif di Windows.
-- `wal_level = logical`, `max_wal_senders >= 1`, `max_replication_slots >= 1`.
-- Database bernama `belajar-postgres` tersedia.
-- Docker Desktop berjalan dengan WSL2.
-- Golang terpasang jika ingin menjalankan consumer.
+- Docker Desktop aktif (WSL2)
+- PostgreSQL lokal aktif di port `5432`, database `belajar-postgres`
+- `wal_level = logical` di PostgreSQL
+- Go 1.22+ terinstall
+- Docker image Maven akan dipakai untuk build custom SMT Java
 
-## Start Stack Docker
+---
 
-Jalankan dari root project:
+## Cara Run dari Awal (First Time Setup)
+
+### Step 1 — Build Custom SMT JAR
+
+Build plugin Kafka Connect SMT:
+
+```powershell
+docker run --rm -v "${PWD}\smt:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-17 mvn clean test package
+```
+
+Output JAR akan berada di `smt/target/cdc-audit-smt-1.0.0.jar`.
+
+Detail desain SMT ada di `SMT_AUDIT_TRAIL.md`.
+
+---
+
+### Step 2 — Jalankan Docker Stack
+
+Buka terminal di folder `cdc-demo`:
 
 ```powershell
 docker compose up -d
 ```
 
-Tunggu sampai service berikut siap:
+Tunggu sampai 3 container berstatus `Running`:
 
-- Kafka di `localhost:9092`
-- Debezium Connect di `localhost:8083`
-- Kafka UI di `localhost:8080`
-
-## Setup PostgreSQL Lokal
-
-Login ke PostgreSQL lokal lalu jalankan:
-
-```sql
-\c "belajar-postgres"
-\i 'D:/PROJECT-GITHUB/cdc-demo/sql/orders.sql'
+```
+✔ Container kafka      Running
+✔ Container kafka-ui   Running
+✔ Container debezium   Running
 ```
 
-File SQL akan membuat role CDC `debezium` dengan password `debezium123`, memberi akses ke database `belajar-postgres`, lalu membuat publication `dbz_orders_publication` untuk tabel `orders`.
+---
 
-## Register Debezium Connector
+### Step 3 — Buat Tabel di PostgreSQL *(sekali saja)*
 
-Setelah Connect siap, register connector:
+Buka **pgAdmin** → database `belajar-postgres` → Query Tool, lalu jalankan SQL berikut:
+
+```sql
+-- Buat tabel orders
+CREATE TABLE IF NOT EXISTS public.orders (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product TEXT NOT NULL,
+    qty INTEGER NOT NULL CHECK (qty > 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Buat role debezium
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'debezium') THEN
+        CREATE ROLE debezium WITH LOGIN REPLICATION PASSWORD 'debezium123';
+    ELSE
+        ALTER ROLE debezium WITH LOGIN REPLICATION PASSWORD 'debezium123';
+    END IF;
+END $$;
+
+-- Grant akses
+GRANT CONNECT ON DATABASE "belajar-postgres" TO debezium;
+GRANT USAGE ON SCHEMA public TO debezium;
+GRANT SELECT ON public.orders TO debezium;
+
+-- Set replica identity
+ALTER TABLE public.orders REPLICA IDENTITY FULL;
+
+-- Buat publication
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'dbz_orders_publication') THEN
+        CREATE PUBLICATION dbz_orders_publication FOR TABLE public.orders;
+    END IF;
+END $$;
+```
+
+---
+
+### Step 4 — Daftarkan Debezium Connector *(sekali saja)*
+
+Pastikan terminal berada di folder root `cdc-demo`:
 
 ```powershell
 Invoke-RestMethod `
@@ -56,106 +102,155 @@ Invoke-RestMethod `
   -InFile .\connector\postgres-orders.json
 ```
 
-Status connector bisa dicek dengan:
+Cek status connector (tunggu ~5 detik):
 
 ```powershell
+Start-Sleep -Seconds 5
 Invoke-RestMethod http://localhost:8083/connectors/orders-postgres-connector/status
 ```
 
-## Verifikasi Topic Kafka
+Pastikan `connector.state = RUNNING` dan `tasks[0].state = RUNNING`.
 
-List topic yang muncul di broker:
+---
 
-```powershell
-docker exec kafka sh -lc '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list'
+Connector ini sudah memakai urutan SMT:
+
+```text
+CanonicalizeValue -> Sha256HashValue
 ```
 
-Detail topic Debezium:
+Field tambahan akan muncul di payload Kafka sebagai `canonical_payload` dan `hash`.
 
-```powershell
-docker exec kafka sh -lc '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic cdc_postgres.public.orders'
-```
+---
 
-Perkiraan jumlah message pada topic bisa dilihat dari offset terakhir:
-
-```powershell
-docker exec kafka sh -lc '/opt/kafka/bin/kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic cdc_postgres.public.orders --time -1'
-```
-
-Untuk demo ini, topic utama yang diharapkan adalah `cdc_postgres.public.orders`.
-
-## Jalankan Consumer Golang
-
-Masuk ke folder consumer lalu jalankan:
+### Step 5 — Jalankan Consumer + Dashboard
 
 ```powershell
 cd consumer
-go mod tidy
-go run .
+go run . -topic cdc_postgres.public.orders -group orders-consumer
 ```
 
-Jika topic atau broker ingin diganti:
+Output yang diharapkan:
 
-```powershell
-go run . -broker localhost:9092 -topic cdc_postgres.public.orders -group orders-consumer
+```
+audit database ready at ./audit.db
+waiting for events on topic cdc_postgres.public.orders from broker localhost:9092
+dashboard available at http://localhost:8090
 ```
 
-## Test End-to-End
+---
 
-1. Start stack Docker.
-2. Jalankan SQL schema `sql/orders.sql`.
-3. Register connector dari `connector/postgres-orders.json`.
-4. Jalankan consumer Go.
-5. Insert data ke tabel `orders`:
+### Step 6 — Buka Dashboard
+
+```
+http://localhost:8090
+```
+
+---
+
+### Step 7 — Test CDC dengan Insert Data
+
+Jalankan di pgAdmin → `belajar-postgres` → Query Tool:
 
 ```sql
-INSERT INTO public.orders (product, qty) VALUES ('Keyboard', 1);
+-- INSERT
+INSERT INTO public.orders (product, qty) VALUES ('Laptop Gaming', 1);
+INSERT INTO public.orders (product, qty) VALUES ('Mechanical Keyboard', 2);
 
-UPDATE public.orders
-SET qty = 2
-WHERE id = 1;
+-- UPDATE
+UPDATE public.orders SET qty = 5 WHERE product = 'Laptop Gaming';
 
-DELETE FROM public.orders
-WHERE id = 1;
+-- DELETE
+DELETE FROM public.orders WHERE product = 'Mechanical Keyboard';
 ```
 
-6. Verifikasi output consumer:
+Event akan muncul di dashboard **secara realtime** tanpa refresh! 🎉
 
-```text
-CDC Event:
-{ ... payload insert Debezium ... }
+---
 
-CDC Event:
-{ ... payload update Debezium ... }
+## Run Berikutnya (Setelah Setup Selesai)
 
-CDC Event:
-{ ... payload delete Debezium ... }
+Cukup 3 langkah jika JAR SMT belum ada atau source SMT berubah:
+
+```powershell
+# 0. Build SMT kalau belum ada / setelah ubah source Java
+docker run --rm -v "${PWD}\smt:/workspace" -w /workspace maven:3.9.9-eclipse-temurin-17 mvn clean test package
+
+# 1. Jalankan Docker
+docker compose up -d
+
+# 2. Jalankan consumer + dashboard
+cd consumer
+go run . -topic cdc_postgres.public.orders -group orders-consumer
 ```
 
-## Troubleshooting Umum
+Lalu buka `http://localhost:8090`.
 
-### 1. Connect tidak bisa connect ke Kafka
+---
 
-Biasanya karena advertised listener salah. Untuk konteks ini, internal container harus pakai `kafka:9092`, sedangkan host Windows pakai `localhost:9092`.
+## Ports
 
-### 2. Connector status FAILED
+| Service | URL | Keterangan |
+|---|---|---|
+| 🟢 **Dashboard** | http://localhost:8090 | Audit Trail Dashboard |
+| 📊 Kafka UI | http://localhost:8080 | Monitor Kafka topics |
+| 🔗 Debezium | http://localhost:8083 | Connector REST API |
+| 🐘 PostgreSQL | localhost:5432 | Database utama |
 
-Periksa:
+---
 
-- password PostgreSQL benar
-- `wal_level=logical`
-- publication `dbz_orders_publication` sudah ada
-- table `public.orders` memang ada
-- user punya hak akses ke database dan schema
+## Troubleshooting
 
-### 3. Tidak ada event masuk ke Kafka UI
+### Port 8090 sudah dipakai
+```powershell
+Get-NetTCPConnection -LocalPort 8090 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+```
 
-Periksa apakah `INSERT` benar-benar terjadi di database yang sama dengan connector. Pastikan juga topic `cdc_postgres.public.orders` sudah dibuat dan consumer membaca topic yang benar.
+### Connector FAILED
+```powershell
+# Lihat error detail
+(Invoke-RestMethod http://localhost:8083/connectors/orders-postgres-connector/status).tasks[0]
 
-### 4. Consumer Go tidak menerima event
+# Reset connector
+Invoke-RestMethod -Method Delete -Uri http://localhost:8083/connectors/orders-postgres-connector
+Start-Sleep -Seconds 3
+Invoke-RestMethod -Method Post -Uri http://localhost:8083/connectors -ContentType "application/json" -InFile .\connector\postgres-orders.json
+```
 
-Periksa broker address, topic name, dan apakah consumer sudah dijalankan sebelum insert. Jika perlu, gunakan `-broker localhost:9092` dan `-topic cdc_postgres.public.orders`.
+> ⚠️ Semua perintah Invoke-RestMethod harus dijalankan dari folder **root `cdc-demo`**, bukan dari subfolder `consumer`.
 
-### 5. Docker Desktop / WSL2 issue di Windows
+### Consumer tidak menerima event
+Pastikan topic sudah ada:
+```powershell
+docker exec kafka sh -lc '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list'
+```
+Topic `cdc_postgres.public.orders` harus muncul di list.
 
-Jika container tidak bisa akses PostgreSQL lokal, pastikan connector memakai `host.docker.internal` dan PostgreSQL mengizinkan koneksi dari host Windows.
+---
+
+## Struktur Project
+
+```
+cdc-demo/
+├── docker-compose.yml          — Kafka, Debezium, Kafka UI
+├── connector/
+│   └── postgres-orders.json   — Debezium connector config
+├── smt/
+│   ├── pom.xml                — Maven project custom SMT
+│   └── src/                   — CanonicalizeValue + Sha256HashValue
+├── sql/
+│   └── orders.sql             — DDL tabel orders + publication
+└── consumer/
+    ├── main.go                — Kafka consumer + HTTP server
+    ├── model/audit.go         — Struct AuditLog
+    ├── store/audit.go         — SQLite CRUD
+    ├── handler/
+    │   ├── api.go             — REST API endpoints
+    │   └── ws.go              — WebSocket hub
+    └── static/
+        ├── index.html         — Dashboard utama
+        ├── detail.html        — Halaman detail event
+        └── assets/
+            ├── style.css      — Dark glassmorphism theme
+            └── app.js         — WebSocket client + UI logic
+```
