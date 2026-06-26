@@ -125,6 +125,8 @@ Field tambahan akan muncul di payload Kafka sebagai `canonical_payload` dan `has
 
 ### Step 5 — Jalankan Consumer + Dashboard
 
+Pastikan terminal sedang berada di folder `consumer` sebelum menjalankan Go command.
+
 ```powershell
 cd consumer
 go run . -topic cdc_postgres.public.orders -group orders-consumer
@@ -225,6 +227,13 @@ Pastikan topic sudah ada:
 docker exec kafka sh -lc '/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list'
 ```
 Topic `cdc_postgres.public.orders` harus muncul di list.
+
+### `go: cannot find main module`
+Error ini biasanya muncul kalau command dijalankan dari folder root repo, bukan dari `consumer`.
+```powershell
+Set-Location D:\PROJECT-GITHUB\cdc-demo\consumer
+go run . -topic cdc_postgres.public.orders -group orders-consumer
+```
 
 ---
 
