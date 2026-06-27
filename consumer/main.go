@@ -47,8 +47,8 @@ type debeziumSource struct {
 func main() {
 	var (
 		broker   = flag.String("broker", "localhost:9092", "Kafka broker address")
-		topic    = flag.String("topic", "cdc_postgres.public.orders", "Kafka topic name")
-		group    = flag.String("group", "orders-consumer", "Kafka consumer group")
+		topics   = flag.String("topics", "cdc_simrs.public.patient,cdc_simrs.public.doctor,cdc_simrs.public.room,cdc_simrs.public.visit,cdc_simrs.public.queue,cdc_simrs.public.medical_record,cdc_simrs.public.diagnosis,cdc_simrs.public.prescription,cdc_simrs.public.laboratory,cdc_simrs.public.billing", "Kafka topics (comma separated)")
+		group    = flag.String("group", "simrs-consumer", "Kafka consumer group")
 		dbPath   = flag.String("db", "./audit.db", "SQLite database path")
 		httpAddr = flag.String("addr", ":8090", "HTTP server address for dashboard")
 	)
@@ -120,9 +120,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	topicList := strings.Split(*topics, ",")
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     []string{*broker},
-		Topic:       *topic,
+		GroupTopics: topicList,
 		GroupID:     *group,
 		Dialer:      newKafkaDialer(*broker),
 		StartOffset: kafka.FirstOffset,
@@ -133,7 +134,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("waiting for events on topic %s from broker %s", *topic, *broker)
+	log.Printf("waiting for events on topics %v from broker %s", topicList, *broker)
 
 	for {
 		msg, err := r.ReadMessage(ctx)
@@ -172,7 +173,7 @@ func main() {
 		printEvent(payload)
 
 		// Build and persist audit log entry.
-		entry := buildAuditLog(payload, msg.Value, *topic)
+		entry := buildAuditLog(payload, msg.Value, msg.Topic)
 		id, err := store.SaveAuditLog(db, entry)
 		if err != nil {
 			log.Printf("save audit log: %v", err)
